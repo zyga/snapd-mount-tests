@@ -1,0 +1,4 @@
+execute: |
+  echo "This test is about to fail, this is expected."
+  false
+summary: This test always fails

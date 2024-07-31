@@ -1,0 +1,16 @@
+name: test-snapd-layout
+version: a
+
+confinement: strict
+base: core24
+architecture: all
+
+apps:
+  sh:
+    command: bin/sh
+  bash:
+    command: bin/bash
+
+layout:
+  @BIND_TO@:
+    bind: $SNAP/foo

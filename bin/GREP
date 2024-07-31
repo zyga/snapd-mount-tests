@@ -1,0 +1,76 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2019-2024 Zygmunt Krynicki
+# SPDX-License-Identifier: LGPL-3.0-only
+#
+# This file is part of zmk.
+#
+# Zmk is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License version 3 as
+# published by the Free Software Foundation.
+#
+# Zmk is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Zmk.  If not, see <https://www.gnu.org/licenses/>.
+
+# Find the system grep, taking precautions not to pick this script again.
+IFS=:
+
+for dir in $PATH; do
+	# shellcheck disable=3013
+	if [ -x "$dir/grep" ] && [ ! "$0" -ef "$dir/grep" ]; then
+		grep="$dir/grep"
+		break
+	fi
+done
+unset IFS
+test -n "$grep" || (
+	echo "GREP: cannot find system grep"
+	exit 1
+)
+
+# If a case-insensitive filesystem picked this script over the system grep
+# implementation, execute the system grep.
+if [ "$(basename "$0")" = grep ]; then
+	exec "$grep" "$@"
+fi
+
+# Make sure we have the pattern or any other arguments given.
+if [ $# -eq 0 ]; then
+	echo "Usage: GREP [options] [pattern] [file ...]"
+	exit
+fi
+
+# Make sure that we are not accidentally reading from a tty.
+if [ -t 0 ]; then
+	echo "GREP: refusing to match terminal input"
+	exit 1
+fi
+
+# Read the input to a temporary buffer.
+input_temp="$(mktemp)"
+trap 'rm -f $input_temp' EXIT
+cat >"$input_temp"
+
+# If the input matches the given pattern, we're all set.
+if "$grep" -q "$@" "$input_temp"; then
+	exit
+fi
+
+# Display information about failed match, along with the input and the pattern.
+printf 'GREP: failed to match: grep'
+for arg in "$@"; do
+	printf ' "%s"' "$(echo "$arg" | sed -e 's@\(["$]\)@\\\1@g')"
+done
+printf '\n'
+if [ "$(wc -l <"$input_temp")" -gt 1 ]; then
+	printf 'GREP: input starts below:\n\n'
+	cat "$input_temp"
+	printf '\nGREP: input ends above.\n'
+else
+	printf 'GREP: for input "%s"\n' "$(sed -e 's@\(["$]\)@\\\1@g' "$input_temp")"
+fi
+exit 1

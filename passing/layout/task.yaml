@@ -1,0 +1,16 @@
+summary: Observe how layouts behave depending on the directory
+environment:
+  BIND_TO/bind_to_etc_foo: /etc/foo/foo
+  BIND_TO/bind_to_etc_foo_bar: /etc/foo/bar
+  BIND_TO/bind_to_opt_foo: /opt/foo
+  BIND_TO/bind_to_usr_foo: /usr/foo
+  BIND_TO/bind_to_usr_lib_foo: /usr/lib/foo
+  BIND_TO/bind_to_usr_lib_x86_64_linux_gnu_foo: /usr/lib/x86_64-linux-gnu/foo
+  BIND_TO/bind_to_usr_share_doc_foo: /usr/share/doc/foo
+  BIND_TO/bind_to_usr_share_foo: /usr/share/foo
+  BIND_TO/bind_to_var_lib_foo: /var/lib/foo
+  # BIND_TO/foo: /foo # Rejected by snapd validator
+execute: ./task.sh execute
+prepare: ./task.sh prepare
+restore: ./task.sh restore
+debug: ./task.sh debug

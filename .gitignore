@@ -1,0 +1,12 @@
+# Artifact files from autopkgtest-build-qemu.
+*.img
+*.img.raw
+*.img.log
+
+# Spread state files.
+.spread-reuse.yaml
+.spread-reuse.*.yaml
+
+# Snaps cached locally to speed up testing.
+*.assert
+*.snap

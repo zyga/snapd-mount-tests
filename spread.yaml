@@ -1,0 +1,85 @@
+backends:
+  qemu:
+    core-count: 4
+    memory: 2G
+    systems:
+      - debian-12:
+          bios: uefi
+          password: user
+          username: user
+      - debian-13:
+          bios: uefi
+          password: user
+          username: user
+      - debian-sid:
+          bios: uefi
+          password: user
+          username: user
+      - ubuntu-20.04:
+          bios: uefi
+          device-backends:
+            drive: virtio
+            network: virtio-net-pci
+          password: ubuntu
+          username: ubuntu
+      - ubuntu-22.04:
+          bios: uefi
+          device-backends:
+            drive: virtio
+            network: virtio-net-pci
+          password: ubuntu
+          username: ubuntu
+      - ubuntu-24.04:
+          bios: uefi
+          device-backends:
+            drive: virtio
+            network: virtio-net-pci
+          password: ubuntu
+          username: ubuntu
+          workers: 4
+environment:
+  LANG: C.UTF-8
+  LANGUAGE: en
+  PATH: $SPREAD_PATH/bin:$PATH
+exclude:
+  - .git
+  - "*.log"
+  - "*.img"
+  - "*.img.raw"
+  - .spread-reuse.yaml
+path: /tmp/snapd-mount-tests
+prepare: |
+  sudo apt update && sudo apt install -y snapd make
+  echo "We are using the following version of snap/snapd, make and apparmor."
+  snap version
+  make --version
+  apparmor_parser --version
+  echo "Tests may depend on two revisions of the core24 base snap."
+  . "snap-revs.$(uname -m).sh"
+  echo "Installing required snaps, use 'make fetch-snaps' on the host to cache them."
+  sudo TEST_SNAPD_REV="$TEST_SNAPD_REV" TEST_CORE24_REV_A="$TEST_CORE24_REV_A" TEST_CORE24_REV_B="$TEST_CORE24_REV_B" \
+    make --warn-undefined-variables -f spread.mk install-snaps
+  echo "No snaps will refresh while tests are in progress."
+  sudo snap refresh --hold
+project: snapd-mount-tests
+restore: |
+  echo "Removing snaps installed for testing."
+  . "snap-revs.$(uname -m).sh"
+  sudo TEST_SNAPD_REV="$TEST_SNAPD_REV" TEST_CORE24_REV_A="$TEST_CORE24_REV_A" TEST_CORE24_REV_B="$TEST_CORE24_REV_B" \
+    make --warn-undefined-variables -f spread.mk remove-snaps
+suites:
+  failing/:
+    manual: true
+    summary: Failing tests showing bugs or misconceptions about mount namespace.
+  passing/:
+    environment:
+    #  HOMEDIRS/homedirs_unset: ""
+    #  HOMEDIRS/homedirs_var_lib: /var/lib
+    HOMEDIRS: /var/lib
+    prepare: |
+      if [ -n "${HOMEDIRS:=}" ]; then
+        sudo snap set system homedirs="$HOMEDIRS"
+      fi
+    restore: |
+      sudo snap unset system homedirs
+    summary: Passing tests showing snap applications that work as expected.
